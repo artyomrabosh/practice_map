@@ -85,17 +85,6 @@ class SentsDataset(torch.utils.data.Dataset):
     def save(self):
         self.df.to_csv(os.path.join(self.data_dir, "sents.csv"))
 
-    def save_train(self):
-        labeling = {
-            "habr": 0,
-            "spbu": 1
-        }
-        df_to_save = self.df
-
-        self.df['label'] = self.df.source_name.apply(lambda x: labeling[x])
-
-        self.df.to_csv(os.path.join(self.data_dir, "train.csv"))
-
     def sample(self, n=1):
         if n == 1:
             return self.df.sample()
@@ -130,7 +119,17 @@ class LabeledDataset(SentsDataset):
     
     def save_labeled(self):
         self.labeled_df.to_csv(os.path.join(f"{self.data_dir}", "labeled.csv"), index=False)
-    
+        
+    def save_train(self):
+        labeling = {
+            "habr": 0,
+            "spbu": 1
+        }
+        self.df['label'] = self.df.source_name.apply(lambda x: labeling[x])
+        
+        (self.df[~self.df.text.isin(list(self.labeled_df.text))]
+        .to_csv(os.path.join(self.data_dir, "train.csv")))
+            
     def add_new_record(self, record, label):
         new_record = {'text': record.text.item(),
                       'source_name': record.source_name.item(),
