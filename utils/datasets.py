@@ -1,6 +1,7 @@
 import torch
 
 from IPython.display import clear_output
+from IPython.display import display
 import pandas as pd
 import os
 from os.path import isdir, isfile
@@ -113,23 +114,29 @@ class LabeledDataset(SentsDataset):
             self.labeled_df = pd.DataFrame({'text': [], "source_name": [], 'label': []})
         else:
             self.labeled_df = pd.read_csv(os.path.join(f"{self.data_dir}", "labeled.csv"))
-        
-    def save(self):
-        self.df.to_csv(os.path.join(f"{self.data_dir}", "sents.csv"), index=False)
     
     def save_labeled(self):
         self.labeled_df.to_csv(os.path.join(f"{self.data_dir}", "labeled.csv"), index=False)
         
-    def save_train(self):
+    def save_train(self, train_size, is_balanced=False, random_state=42):
         labeling = {
             "habr": 0,
             "spbu": 1
         }
         self.df['label'] = self.df.source_name.apply(lambda x: labeling[x])
-        
-        (self.df[~self.df.text.isin(list(self.labeled_df.text))]
-        .to_csv(os.path.join(self.data_dir, "train.csv")))
-            
+
+        if is_balanced:
+            weight = len(self.df[self.df['label'] == 0])/len(self.df[self.df['label'] == 1])
+            self.df['weight'] = self.df.label.apply(lambda x: weight if x == 1 else 1)
+            (self.df
+            [~self.df.text.isin(list(self.labeled_df.text))]
+            .sample(train_size, random_state=random_state, weights='weight')
+            .to_csv(os.path.join(self.data_dir, "train.csv")))
+        else:
+            (self.df
+             [~self.df.text.isin(list(self.labeled_df.text))]
+             .to_csv(os.path.join(self.data_dir, "train.csv")))
+
     def add_new_record(self, record, label):
         new_record = {'text': record.text.item(),
                       'source_name': record.source_name.item(),
