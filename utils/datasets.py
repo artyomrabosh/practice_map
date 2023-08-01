@@ -137,6 +137,8 @@ class LabeledDataset(SentsDataset):
              [~self.df.text.isin(list(self.labeled_df.text))]
              .to_csv(os.path.join(self.data_dir, "train.csv")))
 
+        self.labeled_df.to_csv(os.path.join(self.data_dir, "val.csv"))
+
     def add_new_record(self, record, label):
         new_record = {'text': record.text.item(),
                       'source_name': record.source_name.item(),
