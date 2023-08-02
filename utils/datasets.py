@@ -1,44 +1,42 @@
-import torch
-
+from torch.utils.data import Dataset
 from IPython.display import clear_output
-from IPython.display import display
 import pandas as pd
 import os
 from os.path import isdir, isfile
 from natasha import (
     Segmenter,
-
     NewsEmbedding,
     NewsMorphTagger,
-
     Doc
 )
 
-class PDFDataset(torch.utils.data.Dataset):
-    
+
+class PDFDataset(Dataset):
+
     def check_pdfs(self):
         self.pdfs = []
 
         assert isdir(self.data_dir) == True
-        
+
         for path in os.listdir(self.data_dir):
             if os.path.isfile(os.path.join(self.data_dir, path)):
                 self.pdfs.append(path)
-    
+
     def __init__(self, data_dir='data'):
         self.data_dir = os.path.join(data_dir, 'spbu', "pdf")
         self.check_pdfs()
-    
+
     def __getitem__(self, idx):
-        return {'name': self.pdfs[idx], "path": os.path.join(self.data_dir, self.pdfs[idx])} 
-    
+        return {'name': self.pdfs[idx], "path": os.path.join(self.data_dir, self.pdfs[idx])}
+
     def __len__(self):
         return len(self.pdfs)
-    
+
     def read_pdf(self, idx):
         return open(os.path.join(self.data_dir, self.pdfs[idx]), 'rb')
 
-class SentsDataset(torch.utils.data.Dataset):
+
+class SentsDataset(Dataset):
 
     @staticmethod
     def read_df(path):
@@ -57,21 +55,15 @@ class SentsDataset(torch.utils.data.Dataset):
 
     def __init__(self, data_dir="data", create_if_exist=False):
         self.data_dir = os.path.join(data_dir, "sents")
-        assert isdir(os.path.join('data', "sents")) == True
+        assert isdir(os.path.join('data', "sents"))
 
         dataframes = []
-
-        if "sents.csv" in os.listdir(self.data_dir):
-            self.df = pd.read_csv(os.path.join(self.data_dir, "sents.csv"))
-            return
 
         for path in os.listdir(self.data_dir):
             if isfile(os.path.join(self.data_dir, path)) and not path.startswith("labeled"):
                 dataframes.append(self.read_df(os.path.join(self.data_dir, path)))
 
         self.df = pd.concat(dataframes)
-        self.df = self.df.sample(n=20000)
-        self.analyze_morphology()
 
     def analyze_morphology(self):
         emb = NewsEmbedding()
@@ -84,7 +76,7 @@ class SentsDataset(torch.utils.data.Dataset):
         self.df['is_sing'] = self.df.doc.progress_apply(self.is_sing_first_person)
 
     def save(self):
-        self.df.to_csv(os.path.join(self.data_dir, "sents.csv"))
+        self.df.to_csv(os.path.join(self.data_dir, "labeled_sents.csv"))
 
     def sample(self, n=1):
         if n == 1:
@@ -100,44 +92,43 @@ class SentsDataset(torch.utils.data.Dataset):
     def __contains__(self, text):
         return text in list(self.df.text)
 
+
 class LabeledDataset(SentsDataset):
-    
     LABELS = {
-        'y' : 1, # scientific
-        'n' : 0  # non scientific
+        'y': 1,  # scientific
+        'n': 0  # non scientific
     }
-    
-    def __init__(self, data_dir="data", create_if_exist=False):
+
+    def __init__(self, class_ratio=0.5, data_dir="data", create_if_exist=False):
         super().__init__(data_dir, create_if_exist)
-        
+        self.class_ratio = class_ratio
+
         if not os.path.isfile(os.path.join(f"{self.data_dir}", "labeled.csv")):
             self.labeled_df = pd.DataFrame({'text': [], "source_name": [], 'label': []})
         else:
             self.labeled_df = pd.read_csv(os.path.join(f"{self.data_dir}", "labeled.csv"))
-    
+
     def save_labeled(self):
         self.labeled_df.to_csv(os.path.join(f"{self.data_dir}", "labeled.csv"), index=False)
-        
-    def save_train(self, train_size, is_balanced=False, random_state=42):
+
+    def save_train(self, train_size, random_state=42):
         labeling = {
             "habr": 0,
             "spbu": 1
         }
         self.df['label'] = self.df.source_name.apply(lambda x: labeling[x])
 
-        if is_balanced:
-            weight = len(self.df[self.df['label'] == 0])/len(self.df[self.df['label'] == 1])
-            self.df['weight'] = self.df.label.apply(lambda x: weight if x == 1 else 1)
-            (self.df
-            [~self.df.text.isin(list(self.labeled_df.text))]
-            .sample(train_size, random_state=random_state, weights='weight')
-            .to_csv(os.path.join(self.data_dir, "train.csv")))
-        else:
-            (self.df
-             [~self.df.text.isin(list(self.labeled_df.text))]
-             .to_csv(os.path.join(self.data_dir, "train.csv")))
+        self.df = self.df[~self.df.text.isin(list(self.labeled_df.text))]
 
-        self.labeled_df.to_csv(os.path.join(self.data_dir, "val.csv"))
+        (
+            pd.concat([
+                self.df[self.df['label'] == 1].sample(int(train_size * self.class_ratio)),
+                self.df[self.df['label'] == 0].sample(int(train_size * (1 - self.class_ratio)))
+            ])
+            .to_csv(os.path.join(self.data_dir, "labeled_train.csv"))
+        )
+
+        self.labeled_df.to_csv(os.path.join(self.data_dir, "labeled_val.csv"))
 
     def add_new_record(self, record, label):
         new_record = {'text': record.text.item(),
@@ -145,27 +136,50 @@ class LabeledDataset(SentsDataset):
                       'label': label}
         self.labeled_df = self.labeled_df.append(new_record, ignore_index=True)
         self.save_labeled()
-    
+
     def label_df(self):
         inp = "s"
         while inp != 'exit':
             record = self.df.sample()
-            
+
             if record.text.item() in self.labeled_df.text:
                 continue
 
             clear_output(wait=False)
             print(f'Source  : {record.source_name.item()}')
             print(f'Text    : {record.text.item()}')
-            
+
             inp = input().lower()
             while inp not in ["y", "n", 's', 'exit']:
                 print("invalid command")
                 print("valid commands: Y, N, S, EXIT")
                 inp = input().lower()
-            
+
             if inp in ['y', 'n']:
                 self.add_new_record(record, self.LABELS[inp])
-    
+
             if inp == "exit":
                 self.save_labeled()
+
+
+class classificationDataset(Dataset):
+
+    def __init__(self, data_path, tokenizer, MAX_LEN):
+        self.df = pd.read_csv(data_path)
+        self.token = self.df.text.progress_apply(lambda x: tokenizer.encode_plus(str(x),
+                                                                                 add_special_tokens=True,
+                                                                                 truncation=True,
+                                                                                 padding='max_length',
+                                                                                 max_length=MAX_LEN,
+                                                                                 return_attention_mask=True,
+                                                                                 return_tensors='pt'
+                                                                                 ))
+        self.labels = list(self.df.label)
+
+    def __getitem__(self, index):
+        input_ids = torch.squeeze(self.token[index]['input_ids'])
+        attention_mask = torch.squeeze(self.token[index]['attention_mask'])
+        return input_ids, attention_mask, self.labels[index]
+
+    def __len__(self):
+        return len(self.df)

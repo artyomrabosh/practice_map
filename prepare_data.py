@@ -13,7 +13,7 @@ def custom_str_to_lst(string):
 def prepare_data_habr():
     df = pd.read_csv(os.path.join(config['data_dir'], 'habr', "raw_texts.csv"))
     df['tags'] = df.tags.apply(custom_str_to_lst)
-    mask = df.tags.apply(lambda x: bool(list(set(x) & config['tags_to_save'])))
+    mask = df.tags.apply(lambda x: bool(list(set(x) & set(config['tags_to_save']))))
     res = df[mask]
     res["text"] = res['text'].apply(str)
 
@@ -39,8 +39,4 @@ def prepare_data():
     prepare_data_habr()
     dataset = LabeledDataset(config['class_ratio'])
 
-    print(len(dataset.df))
     dataset.save_train(config['train_size'])
-
-
-prepare_data()

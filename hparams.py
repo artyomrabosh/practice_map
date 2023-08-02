@@ -1,4 +1,4 @@
-tags_to_save = set([
+tags_to_save = [
  'javascript',
  'linux',
  'php',
@@ -21,7 +21,7 @@ tags_to_save = set([
  'виртуализация',
  'qt',
  'интерфейсы',
- 'sql','машинное обучение', 'ml', 'dl', 'machine learning','docker'])
+ 'sql','машинное обучение', 'ml', 'dl', 'machine learning','docker']
 
 
 config = dict(
