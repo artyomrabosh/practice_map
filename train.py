@@ -10,6 +10,8 @@ from torch.utils.data import DataLoader
 from transformers import AutoTokenizer
 from transformers import BertForSequenceClassification, AdamW, BertConfig, get_linear_schedule_with_warmup
 
+from torcheval.metrics import BinaryAccuracy, BinaryPrecision, BinaryRecall 
+
 # logger
 #
 
@@ -29,8 +31,8 @@ def main():
     prepare_data()
     tokenizer = AutoTokenizer.from_pretrained(config['tokenizer'], do_lower_case=False)
 
-    train = classificationDataset("data/sents/train.csv", tokenizer, MAX_LEN=512)
-    val = classificationDataset("data/sents/val.csv", tokenizer, MAX_LEN=512)
+    train = classificationDataset("data/sents/labeled_train.csv", tokenizer, MAX_LEN=512)
+    val = classificationDataset("data/sents/labeled_val.csv", tokenizer, MAX_LEN=512)
 
     dataloader_train = DataLoader(
         dataset=train,
@@ -46,7 +48,7 @@ def main():
         drop_last=False,
     )
 
-    device = torch.device("cpu")
+    device = torch.device("cuda:2")
 
     model = BertForSequenceClassification.from_pretrained(
         config['model'],
@@ -82,11 +84,9 @@ def main():
         epochs=epochs,
         min_lr=1e-7,
         val_every=100,
-        Metrics=[],
+        Metrics=[BinaryAccuracy, BinaryPrecision, BinaryRecall],
         device=device
     )
-
-    torch.save(model.state_dict(), "model.pt")
 
     with open("run_id.txt", "w+") as f:
         print(wandb.run.id, file=f)

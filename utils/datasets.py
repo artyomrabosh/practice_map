@@ -1,4 +1,5 @@
 from torch.utils.data import Dataset
+import torch
 from IPython.display import clear_output
 import pandas as pd
 import os
@@ -9,7 +10,9 @@ from natasha import (
     NewsMorphTagger,
     Doc
 )
+from tqdm import tqdm
 
+tqdm.pandas()
 
 class PDFDataset(Dataset):
 
