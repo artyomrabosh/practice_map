@@ -16,6 +16,7 @@ from typing import Dict, Optional, Any, Union
 
 tqdm.pandas()
 
+
 class PDFDataset(Dataset):
 
     def check_pdfs(self):
@@ -27,7 +28,8 @@ class PDFDataset(Dataset):
             if os.path.isfile(os.path.join(self.data_dir, path)):
                 self.pdfs.append(path)
 
-    def __init__(self, data_dir: str ='data'):
+    def __init__(self, data_dir: str = 'data'):
+        self.pdfs = None
         self.data_dir = os.path.join(data_dir, 'spbu', "pdf")
         self.check_pdfs()
 
@@ -58,7 +60,7 @@ class SentsDataset(Dataset):
                     return True
         return False
 
-    def __init__(self, data_dir: str = "data", create_if_exist: bool = False):
+    def __init__(self, data_dir: str = "data"):
         self.data_dir = os.path.join(data_dir, "sents")
         assert isdir(os.path.join('data', "sents"))
 
@@ -167,7 +169,7 @@ class LabeledDataset(SentsDataset):
                 self.save_labeled()
 
 
-class classificationDataset(Dataset):
+class ClassificationDataset(Dataset):
 
     def __init__(self, data_path: str, tokenizer: transformers.PreTrainedTokenizer, MAX_LEN: int):
         self.df = pd.read_csv(data_path)

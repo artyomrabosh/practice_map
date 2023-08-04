@@ -40,7 +40,7 @@ def learning_loop(
         optimizer: torch.optim.Optimizer,
         train_loader: torch.utils.data.Dataloader,
         val_loader: torch.utils.data.Dataloader,
-        scheduler: torch.optim.lr_scheduler.LRScheduler =None,
+        scheduler: torch.optim.lr_scheduler.LRScheduler = None,
         min_lr: float = None,
         epochs: int = 10,
         val_every: int = 100,
