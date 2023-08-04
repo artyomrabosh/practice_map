@@ -5,6 +5,7 @@ import json
 import os
 import pandas as pd
 
+
 class Logger:
     def __init__(self, logs_path: tp.Union[str, os.PathLike]):
         self.path = pathlib.Path(logs_path)

@@ -2,18 +2,16 @@ import wandb
 import datetime
 from hparams import config
 from prepare_data import prepare_data
-from utils.datasets import classificationDataset
+from utils.datasets import ClassificationDataset
 from utils.ml import learning_loop
 
 import torch
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer
-from transformers import BertForSequenceClassification, AdamW, BertConfig, get_linear_schedule_with_warmup
+from transformers import BertForSequenceClassification, AdamW, get_linear_schedule_with_warmup
 
-from torcheval.metrics import BinaryAccuracy, BinaryPrecision, BinaryRecall 
+from torcheval.metrics import BinaryAccuracy, BinaryPrecision, BinaryRecall
 
-# logger
-#
 
 def start_wandb():
     name = 'test-({})'.format(
@@ -31,8 +29,8 @@ def main():
     prepare_data()
     tokenizer = AutoTokenizer.from_pretrained(config['tokenizer'], do_lower_case=False)
 
-    train = classificationDataset("data/sents/labeled_train.csv", tokenizer, MAX_LEN=512)
-    val = classificationDataset("data/sents/labeled_val.csv", tokenizer, MAX_LEN=512)
+    train = ClassificationDataset("data/sents/labeled_train.csv", tokenizer, MAX_LEN=512)
+    val = ClassificationDataset("data/sents/labeled_val.csv", tokenizer, MAX_LEN=512)
 
     dataloader_train = DataLoader(
         dataset=train,

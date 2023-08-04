@@ -1,5 +1,3 @@
-from typing import List, Any
-
 from razdel import sentenize
 import fitz
 import re
@@ -8,8 +6,6 @@ ruABC = "ёйцукенгшщзхъфывапролджэячсмитьбюЁЙ�
 enABC = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM"
 NUMS = r'1234567890,.-)([]:@%№$" '
 acceptable_chars = ruABC + enABC + NUMS
-
-
 
 
 class Parser:
@@ -70,7 +66,7 @@ class Parser:
 
         sents = list(filter(lambda x: not any(c in self.SPECIAL_CHARS for c in x), sents))
         sents = list(filter(lambda x: not x.startswith(self.NUMBERS), sents))
-        sents = list(filter(lambda x: not "https:" in x, sents))
+        sents = list(filter(lambda x: "https:" not in x, sents))
         sents = list(filter(lambda x: not re.search(r"[1-9]\.", x), sents))
 
         sents = [self.replace_chars(sent) for sent in sents]
@@ -87,7 +83,7 @@ class Parser:
     def get_sentences(self, doc_path: str):
         try:
             doc = fitz.open(doc_path)
-        except:
+        except FileNotFoundError:
             print("File not found")
             return []
 

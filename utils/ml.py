@@ -1,4 +1,3 @@
-import torcheval.metrics
 import torch
 import numpy as np
 from tqdm import tqdm
@@ -10,7 +9,9 @@ def get_lr(optimizer: torch.optim.Optimizer):
         return param_group['lr']
 
 
-def val(model: torch.nn.Module, loader: torch.utils.data.Dataloader, Metrics, device):
+def val(model: torch.nn.Module,
+        loader: torch.utils.data.Dataloader,
+        Metrics, device):
     losses_val = []
     cpu_device = torch.device('cpu')
 
@@ -30,9 +31,11 @@ def val(model: torch.nn.Module, loader: torch.utils.data.Dataloader, Metrics, de
                 predictions = outputs.logits.argmax(axis=1)
 
                 for metric in metrics:
-                    metric.update(predictions.to(cpu_device), labels.to(cpu_device))
+                    metric.update(predictions.to(cpu_device),
+                                  labels.to(cpu_device))
 
-    return np.mean(losses_val), {metric.__class__.__name__: metric.compute() for metric in metrics}
+    return np.mean(losses_val), {
+        metric.__class__.__name__: metric.compute() for metric in metrics}
 
 
 def learning_loop(
@@ -47,7 +50,6 @@ def learning_loop(
         Metrics=None,
         device=None,
 ):
-    lrs = []
 
     for epoch in range(epochs):
         print(f'#{epoch}/{epochs}:')

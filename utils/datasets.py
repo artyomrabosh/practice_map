@@ -12,7 +12,6 @@ from natasha import (
     Doc
 )
 from tqdm import tqdm
-from typing import Dict, Optional, Any, Union
 
 tqdm.pandas()
 
@@ -22,7 +21,7 @@ class PDFDataset(Dataset):
     def check_pdfs(self):
         self.pdfs = []
 
-        assert isdir(self.data_dir) == True
+        assert isdir(self.data_dir)
 
         for path in os.listdir(self.data_dir):
             if os.path.isfile(os.path.join(self.data_dir, path)):
@@ -107,7 +106,7 @@ class LabeledDataset(SentsDataset):
     }
 
     def __init__(self, class_ratio: float = 0.5, data_dir: str = "data", create_if_exist: bool = False):
-        super().__init__(data_dir, create_if_exist)
+        super().__init__(data_dir)
         self.class_ratio = class_ratio
 
         if not os.path.isfile(os.path.join(f"{self.data_dir}", "labeled.csv")):
