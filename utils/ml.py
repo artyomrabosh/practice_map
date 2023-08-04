@@ -1,17 +1,16 @@
-from IPython.display import clear_output
+import torcheval.metrics
 import torch
 import numpy as np
-from collections import defaultdict
 from tqdm import tqdm
 import wandb
 
 
-def get_lr(optimizer):
+def get_lr(optimizer: torch.optim.Optimizer):
     for param_group in optimizer.param_groups:
         return param_group['lr']
 
 
-def val(model, loader, device, Metrics):
+def val(model: torch.nn.Module, loader: torch.utils.data.Dataloader, Metrics, device):
     losses_val = []
     cpu_device = torch.device('cpu')
 
@@ -37,15 +36,15 @@ def val(model, loader, device, Metrics):
 
 
 def learning_loop(
-        model,
-        optimizer,
-        train_loader,
-        val_loader,
-        scheduler=None,
-        min_lr=None,
-        epochs=10,
-        val_every=100,
-        Metrics=[],
+        model: torch.nn.Module,
+        optimizer: torch.optim.Optimizer,
+        train_loader: torch.utils.data.Dataloader,
+        val_loader: torch.utils.data.Dataloader,
+        scheduler: torch.optim.lr_scheduler.LRScheduler =None,
+        min_lr: float = None,
+        epochs: int = 10,
+        val_every: int = 100,
+        Metrics=None,
         device=None,
 ):
     lrs = []
@@ -69,8 +68,8 @@ def learning_loop(
             scheduler.step()
             losses_tr.append(loss.item())
 
-            if i % 100 == 0:
-                loss_val, metrics = val(model, val_loader, device, Metrics)
+            if i % val_every == 0 and Metrics:
+                loss_val, metrics = val(model, val_loader, Metrics, device)
                 metrics['loss_val'] = loss_val
                 metrics['loss_train'] = np.mean(losses_tr)
                 metrics['learning_rate'] = get_lr(optimizer)

@@ -1,3 +1,4 @@
+import transformers
 from torch.utils.data import Dataset
 import torch
 from IPython.display import clear_output
@@ -11,6 +12,7 @@ from natasha import (
     Doc
 )
 from tqdm import tqdm
+from typing import Dict, Optional, Any, Union
 
 tqdm.pandas()
 
@@ -25,38 +27,38 @@ class PDFDataset(Dataset):
             if os.path.isfile(os.path.join(self.data_dir, path)):
                 self.pdfs.append(path)
 
-    def __init__(self, data_dir='data'):
+    def __init__(self, data_dir: str ='data'):
         self.data_dir = os.path.join(data_dir, 'spbu', "pdf")
         self.check_pdfs()
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int):
         return {'name': self.pdfs[idx], "path": os.path.join(self.data_dir, self.pdfs[idx])}
 
     def __len__(self):
         return len(self.pdfs)
 
-    def read_pdf(self, idx):
+    def read_pdf(self, idx: int):
         return open(os.path.join(self.data_dir, self.pdfs[idx]), 'rb')
 
 
 class SentsDataset(Dataset):
 
     @staticmethod
-    def read_df(path):
+    def read_df(path: str):
         df = pd.read_csv(path)
         source_name = os.path.basename(path[:-4])
         return pd.DataFrame({"source_name": len(df) * [source_name],
                              "text": df.text})
 
     @staticmethod
-    def is_sing_first_person(doc):
+    def is_sing_first_person(doc: Doc):
         for token in doc.morph.tokens:
             if "Number" in token.feats and "Person" in token.feats:
                 if token.feats['Person'] == "1" and token.feats["Number"] == "Sing":
                     return True
         return False
 
-    def __init__(self, data_dir="data", create_if_exist=False):
+    def __init__(self, data_dir: str = "data", create_if_exist: bool = False):
         self.data_dir = os.path.join(data_dir, "sents")
         assert isdir(os.path.join('data', "sents"))
 
@@ -81,18 +83,18 @@ class SentsDataset(Dataset):
     def save(self):
         self.df.to_csv(os.path.join(self.data_dir, "labeled_sents.csv"))
 
-    def sample(self, n=1):
+    def sample(self, n: int = 1):
         if n == 1:
             return self.df.sample()
         return self.df.sample(n)
 
-    def __getitem__(self, i):
+    def __getitem__(self, i: int):
         return self.df[i]
 
     def __len__(self):
         return len(self.df)
 
-    def __contains__(self, text):
+    def __contains__(self, text: str):
         return text in list(self.df.text)
 
 
@@ -102,7 +104,7 @@ class LabeledDataset(SentsDataset):
         'n': 0  # non scientific
     }
 
-    def __init__(self, class_ratio=0.5, data_dir="data", create_if_exist=False):
+    def __init__(self, class_ratio: float = 0.5, data_dir: str = "data", create_if_exist: bool = False):
         super().__init__(data_dir, create_if_exist)
         self.class_ratio = class_ratio
 
@@ -114,7 +116,7 @@ class LabeledDataset(SentsDataset):
     def save_labeled(self):
         self.labeled_df.to_csv(os.path.join(f"{self.data_dir}", "labeled.csv"), index=False)
 
-    def save_train(self, train_size, random_state=42):
+    def save_train(self, train_size: int, random_state: int = 42):
         labeling = {
             "habr": 0,
             "spbu": 1
@@ -133,11 +135,11 @@ class LabeledDataset(SentsDataset):
 
         self.labeled_df.to_csv(os.path.join(self.data_dir, "labeled_val.csv"))
 
-    def add_new_record(self, record, label):
+    def add_new_record(self, record: pd.Series, label: int):
         new_record = {'text': record.text.item(),
                       'source_name': record.source_name.item(),
                       'label': label}
-        self.labeled_df = self.labeled_df.append(new_record, ignore_index=True)
+        self.labeled_df = pd.concat([self.labeled_df, pd.DataFrame([new_record])], ignore_index=True)
         self.save_labeled()
 
     def label_df(self):
@@ -167,7 +169,7 @@ class LabeledDataset(SentsDataset):
 
 class classificationDataset(Dataset):
 
-    def __init__(self, data_path, tokenizer, MAX_LEN):
+    def __init__(self, data_path: str, tokenizer: transformers.PreTrainedTokenizer, MAX_LEN: int):
         self.df = pd.read_csv(data_path)
         self.token = self.df.text.progress_apply(lambda x: tokenizer.encode_plus(str(x),
                                                                                  add_special_tokens=True,
@@ -179,7 +181,7 @@ class classificationDataset(Dataset):
                                                                                  ))
         self.labels = list(self.df.label)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int):
         input_ids = torch.squeeze(self.token[index]['input_ids'])
         attention_mask = torch.squeeze(self.token[index]['attention_mask'])
         return input_ids, attention_mask, self.labels[index]

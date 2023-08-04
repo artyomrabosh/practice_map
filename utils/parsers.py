@@ -9,9 +9,8 @@ enABC = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM"
 NUMS = r'1234567890,.-)([]:@%№$" '
 acceptable_chars = ruABC + enABC + NUMS
 
-def convert_case(match_obj):
-    if match_obj.group(1) is not None:
-        return match_obj.group(1)
+
+
 
 class Parser:
     SPECIAL_CHARS = "#^&*+_=<✓α𝑎>/\≡≡Σ∑∈●}{≤≥�åðÿæπ"
@@ -27,42 +26,36 @@ class Parser:
     }
 
     def __init__(self):
-        self.blocks = []
-        return
+        pass
 
     @staticmethod
-    def convert_case(match_obj):
-        if match_obj.group(1) is not None:
-            return match_obj.group(1)
-
-    @staticmethod
-    def delete_repeating_whitespaces(sent):
+    def delete_repeating_whitespaces(sent: str):
         return re.sub(' +', ' ', sent)
 
     @staticmethod
-    def delete_unicode(sent):
+    def delete_unicode(sent: str):
         sent = re.sub('\xad', ' ', sent)
         return sent.encode("utf-8", "ignore").decode()
 
     @staticmethod
-    def replace_hyphenation(sent):
-        return re.sub("(\S)- ", convert_case, sent)
+    def replace_hyphenation(sent: str):
+        return re.sub("(\S)- ", lambda x: x.group(1) if x.group(1) is not None else None, sent)
 
-    def replace_chars(self, sent):
+    def replace_chars(self, sent: str):
         for key in self.REPLACEMENT_DICT:
             sent = sent.replace(key, self.REPLACEMENT_DICT[key])
         return sent
 
-    def mark_blocks(self):
-        for block in self.blocks:
+    def mark_blocks(self, blocks):
+        for block in blocks:
             if 84 < block['bbox'][0] < 86:
                 block['type'] = "text"
             if block['lines'][0]['spans'][0]['font'] == 'CMUSerif-Bold':
                 block['type'] = 'title'
 
-    def blocks_to_text(self):
+    def blocks_to_text(self, blocks):
         textlines = []
-        for block in self.blocks:
+        for block in blocks:
             block_textlines = []
             for line in block['lines']:
                 for span in line['spans']:
@@ -91,16 +84,19 @@ class Parser:
 
         return sents
 
-    def get_sentences(self, doc_path):
+    def get_sentences(self, doc_path: str):
         try:
             doc = fitz.open(doc_path)
         except:
-            return self.blocks
+            print("File not found")
+            return []
+
+        blocks = []
 
         for page in doc:
-            self.blocks += page.get_text("dict", flags=16)['blocks']
+            blocks += page.get_text("dict", flags=16)['blocks']
 
-        self.mark_blocks()
-        self.blocks = list(filter(lambda x: x['type'] == 'text', self.blocks))
+        self.mark_blocks(blocks)
+        blocks = list(filter(lambda x: x['type'] == 'text', blocks))
 
-        return self.text_to_sents(self.blocks_to_text())
+        return self.text_to_sents(self.blocks_to_text(blocks))
