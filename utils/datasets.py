@@ -112,7 +112,7 @@ class LabeledDataset(SentsDataset):
         if not os.path.isfile(os.path.join(f"{self.data_dir}", "labeled.csv")):
             self.labeled_df = pd.DataFrame({'text': [], "source_name": [], 'label': []})
         else:
-            self.labeled_df = pd.read_csv(os.path.join(f"{self.data_dir}", "labeled.csv"))
+            self.labeled_df = pd.read_csv(os.path.join(f"{self.data_dir}", "labeled.csv"), index_col=0)
 
     def save_labeled(self):
         self.labeled_df.to_csv(os.path.join(f"{self.data_dir}", "labeled.csv"), index=False)
