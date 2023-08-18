@@ -140,7 +140,8 @@ class LabeledDataset(SentsDataset):
         new_record = {'text': record.text.item(),
                       'source_name': record.source_name.item(),
                       'label': label}
-        self.labeled_df = pd.concat([self.labeled_df, pd.DataFrame([new_record])], ignore_index=True)
+        self.labeled_df = pd.concat([self.labeled_df, pd.DataFrame([new_record])],
+                                    ignore_index=True)
         self.save_labeled()
 
     def label_df(self):
@@ -170,16 +171,17 @@ class LabeledDataset(SentsDataset):
 
 class ClassificationDataset(Dataset):
 
-    def __init__(self, data_path: str, tokenizer: transformers.PreTrainedTokenizer, MAX_LEN: int):
+    def __init__(self, data_path: str,
+                 tokenizer: transformers.PreTrainedTokenizer, MAX_LEN: int):
         self.df = pd.read_csv(data_path)
-        self.token = self.df.text.progress_apply(lambda x: tokenizer.encode_plus(str(x),
-                                                                                 add_special_tokens=True,
-                                                                                 truncation=True,
-                                                                                 padding='max_length',
-                                                                                 max_length=MAX_LEN,
-                                                                                 return_attention_mask=True,
-                                                                                 return_tensors='pt'
-                                                                                 ))
+        self.token = self.df.text.progress_apply(
+            lambda x: tokenizer.encode_plus(str(x),
+                                            add_special_tokens=True,
+                                            truncation=True,
+                                            padding='max_length',
+                                            max_length=MAX_LEN,
+                                            return_attention_mask=True,
+                                            return_tensors='pt'))
         self.labels = list(self.df.label)
 
     def __getitem__(self, index: int):

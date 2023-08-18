@@ -1,4 +1,5 @@
 import torch
+from torch.utils.data import DataLoader
 import numpy as np
 from tqdm import tqdm
 import wandb
@@ -10,7 +11,7 @@ def get_lr(optimizer: torch.optim.Optimizer):
 
 
 def val(model: torch.nn.Module,
-        loader: torch.utils.data.Dataloader,
+        loader: DataLoader,
         Metrics, device):
     losses_val = []
     cpu_device = torch.device('cpu')
@@ -41,8 +42,8 @@ def val(model: torch.nn.Module,
 def learning_loop(
         model: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
-        train_loader: torch.utils.data.Dataloader,
-        val_loader: torch.utils.data.Dataloader,
+        train_loader: DataLoader,
+        val_loader: DataLoader,
         scheduler: torch.optim.lr_scheduler.LRScheduler = None,
         min_lr: float = None,
         epochs: int = 10,
